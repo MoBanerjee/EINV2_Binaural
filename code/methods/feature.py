@@ -10,6 +10,7 @@ def nCr(n, r):
     return math.factorial(n) // math.factorial(r) // math.factorial(n-r)
 
 class LogmelIntensity_Extractor(nn.Module):
+    #MAY NEED TO CHANGE THIS FOR BINAURAL
     def __init__(self, cfg):
         super().__init__()
 
@@ -49,7 +50,10 @@ class LogmelIntensity_Extractor(nn.Module):
                             Now it is {}".format(x.shape))
         x = self.stft_extractor(x)
         logmel = self.logmel_extractor(self.spectrogram_extractor(x))
-        intensity_vector = self.intensityVector_extractor(x, self.logmel_extractor.melW)
+        ild=logmel[:,0,:,:]-logmel[:,1,:,:]
+        ild=torch.power(ild,10)
+        
+        # intensity_vector = self.intensityVector_extractor(x, self.logmel_extractor.melW)
         # print("logmel shape")
         # print(logmel.shape)
         # print("iv shape")
@@ -120,7 +124,7 @@ class Features_Extractor_MIC():
             self.upper_bin = np.int(np.floor(self.fmax_spectra * self.n_fft / np.float(self.fs)))
             self.cutoff_bin = np.int(np.floor(self.fmax_spectra * self.n_fft / np.float(self.fs)))
             assert self.upper_bin <= self.cutoff_bin, 'Upper bin for doa feature is higher than cutoff bin for spectrogram {}!'
-            
+            #GCC Features
             # Normalization factor for salsalite
             self.delta = 2 * np.pi * self.fs / (self.n_fft * c)
             self.freq_vector = np.arange(self.n_fft // 2 + 1)
