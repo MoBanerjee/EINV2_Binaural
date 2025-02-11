@@ -49,9 +49,9 @@ class LogmelIntensity_Extractor(nn.Module):
             raise ValueError("x shape must be (batch_size, num_channels, data_length)\n \
                             Now it is {}".format(x.shape))
         x = self.stft_extractor(x)
-        logmel = self.logmel_extractor(self.spectrogram_extractor(x))
-        ild=logmel[:,0,:,:]-logmel[:,1,:,:]
-        ild=torch.power(ild,10)
+        raw_spec,logmel = self.logmel_extractor(self.spectrogram_extractor(x))
+        ild=raw_spec[:,0,:,:]/raw_spec[:,1,:,:]
+        
         
         # intensity_vector = self.intensityVector_extractor(x, self.logmel_extractor.melW)
         # print("logmel shape")
@@ -59,7 +59,7 @@ class LogmelIntensity_Extractor(nn.Module):
         # print("iv shape")
         # print(intensity_vector.shape)
         
-        out = torch.cat((logmel, intensity_vector), dim=1)
+        out = torch.cat((logmel, ild), dim=1)
         return out
 
 class Logmel_Extractor(nn.Module):
@@ -107,6 +107,7 @@ class Logmel_Extractor(nn.Module):
 
 class Features_Extractor_MIC():
     def __init__(self, cfg):
+        self.cfg=cfg
         self.fs = cfg['data']['sample_rate']
         self.n_fft = cfg['data']['nfft']
         self.n_mels = cfg['data']['n_mels']

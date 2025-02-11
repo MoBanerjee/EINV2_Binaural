@@ -448,7 +448,7 @@ class LogmelFilterBank(nn.Module):
         else:
             output = mel_spectrogram
 
-        return output
+        return mel_spectrogram,output
 
 
     def power_to_db(self, input):

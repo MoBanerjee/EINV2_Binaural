@@ -472,7 +472,7 @@ class Preprocess:
         )
         af_extractor = get_afextractor(self.cfg, cuda_enabled).eval()
         iterator = tqdm(enumerate(data_generator), total=len(data_generator), unit='it')
-        scalar_list = [preprocessing.StandardScaler() for _ in range(self.channels_dict[self.cfg['data']['audio_feature']])] #A list of scalers for the logmel and ivs
+        scalar_list = [preprocessing.StandardScaler() for _ in range(self.channels_dict[self.cfg['data']['audio_feature']])] #A list of scalers for the logmel and ivs #CHANGE THIS IF ADAPTING TO BINAURAL
         begin_time = timer()
         for it, batch_sample in iterator:
             if it == len(data_generator):
