@@ -22,12 +22,15 @@ class LogmelIntensity_Extractor(nn.Module):
         ref = 1.0
         amin = 1e-10
         top_db = None
-
+        self.n_mels=n_mels
+        self.nfft=n_fft
         # STFT extractor
         self.stft_extractor = STFT(n_fft=n_fft, hop_length=hop_length, win_length=n_fft, 
             window=window, center=center, pad_mode=pad_mode, 
             freeze_parameters=True)
-
+        self.hopsize=hop_length
+        fft_window = librosa.filters.get_window(window, n_fft, fftbins=True)
+        self.window = torch.from_numpy(librosa.util.pad_center(fft_window, size=n_fft)).to(device="cuda")
         # Spectrogram extractor
         self.spectrogram_extractor = spectrogram_STFTInput
         
@@ -48,18 +51,66 @@ class LogmelIntensity_Extractor(nn.Module):
         if x.ndim != 3:
             raise ValueError("x shape must be (batch_size, num_channels, data_length)\n \
                             Now it is {}".format(x.shape))
-        x = self.stft_extractor(x)
+        x_00=x[:,0,:]
+        x_01=x[:,1,:]
+        mag,cos,sin,x_0,x_1 = self.stft_extractor(x)
+        x=(x_0,x_1)
         raw_spec,logmel = self.logmel_extractor(self.spectrogram_extractor(x))
         ild=raw_spec[:,0,:,:]/raw_spec[:,1,:,:]
-        
-        
+        melcos,_=self.logmel_extractor(cos)
+        melsin,_=self.logmel_extractor(sin)
+        sinipd=melcos[:,1,:,:]*melsin[:,0,:,:]-melcos[:,0,:,:]*melsin[:,1,:,:]
+        cosipd=melcos[:,0,:,:]*melcos[:,1,:,:]+melsin[:,0,:,:]*melsin[:,1,:,:]
+        # sumcos=cos[:,0,:,:]*cos[:,1,:,:]-sin[:,0,:,:]*sin[:,1,:,:]
+        # sumsin=cos[:,0,:,:]*sin[:,1,:,:]+sin[:,0,:,:]*cos[:,1,:,:]
+        # intermediate=sumcos+1.j*sumsin
+        (a,b,c,d)=logmel.shape
+        ild=ild.view(a,1,c,d)
+        sinipd=sinipd.view(a,1,c,d)
+        cosipd=cosipd.view(a,1,c,d)
+        print(logmel.shape)
+        print(ild.shape)
+        print(sinipd.shape)
+        print(cosipd.shape)
+        # print(intermediate.shape)
+        # gcc=torch.fft.irfft(intermediate)
+        # print(gcc.shape)
+        # gcc=torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)
+        # gcc=gcc.view(a,1,c,d)
+        # print("gcc shape")
+        # print(gcc.shape)
         # intensity_vector = self.intensityVector_extractor(x, self.logmel_extractor.melW)
         # print("logmel shape")
         # print(logmel.shape)
         # print("iv shape")
         # print(intensity_vector.shape)
-        
-        out = torch.cat((logmel, ild), dim=1)
+        print(type(self.window))
+        Px = torch.stft(input=x_00,
+                        n_fft=self.nfft,
+                        hop_length=self.hopsize,
+                        win_length=self.nfft,
+                        window=self.window,
+                        center=True,
+                        pad_mode='reflect',
+                        normalized=False, onesided=None, return_complex=True)
+        Px_ref = torch.stft(input=x_01,
+                            n_fft=self.nfft,
+                            win_length=self.nfft,
+                            hop_length=self.hopsize,
+                            window=self.window,
+                            center=True,
+                            pad_mode='reflect',
+                            normalized=False, onesided=None, return_complex=True)
+        R = Px*torch.conj(Px_ref)
+        gcc = torch.fft.irfft(torch.exp(1.j*torch.angle(R)))
+        gcc = torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)
+        print("gcc shape")
+        print(gcc.shape)
+        gcc = gcc.view(a,1,c,d)
+
+    
+        out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)
+        print("out shape",out.shape)
         return out
 
 class Logmel_Extractor(nn.Module):

@@ -218,8 +218,8 @@ class STFT(DFTBase):
         
         real_out = torch.cat(real_out, dim=1)
         imag_out = torch.cat(imag_out, dim=1)
-
-        return real_out, imag_out
+        (mag, cos, sin) = magphase(real_out, imag_out)
+        return mag,cos,sin,real_out, imag_out
 
 
 def magphase(real, imag):
@@ -441,7 +441,7 @@ class LogmelFilterBank(nn.Module):
         """
         # Mel spectrogram
         mel_spectrogram = torch.matmul(input, self.melW)
-
+        
         # Logmel spectrogram
         if self.is_log:
             output = self.power_to_db(mel_spectrogram)

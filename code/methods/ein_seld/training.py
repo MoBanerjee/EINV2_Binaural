@@ -83,7 +83,7 @@ class Trainer(BaseTrainer):
             self.af_extractor.train()
             batch_x = self.af_extractor(batch_x)
         self.model.train()
-        # need to insert data prepoc steps here and also change mean and std calculation. Or in stft only do it? 
+        
         batch_x,batch_target = augment_and_mix(batch_x, batch_target)
         print(batch_x.shape)
         if self.scalar_path.is_file():

@@ -77,7 +77,7 @@ class Preprocess:
 
         # Path for indexes of data
         self.data_type = 'wav' if self.cfg['data']['audio_feature'] in ['logmelIV', 'logmel'] else 'feature'
-        self.channels_dict = {'logmel': 4, 'logmelIV': 7}
+        self.channels_dict = {'logmel': 4, 'logmelIV': 6}
         self.indexes_path_list = [ 
             data_h5_dir.joinpath(self.data_type).joinpath('{}set_{}sChunklen_{}sHoplen_train.csv'\
                 .format(args.dataset_type, cfg['data']['train_chunklen_sec'], cfg['data']['train_hoplen_sec'])),

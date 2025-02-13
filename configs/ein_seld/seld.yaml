@@ -5,12 +5,12 @@ dataset_dir: ./dataset
 dataset_synth: official
 hdf5_dir: ./_hdf5
 data:
-  type: mic
+  type: foa
   train_chunklen_sec: 5
   train_hoplen_sec: 5
   test_chunklen_sec: 5
   test_hoplen_sec: 5
-  audio_feature: logmelgcc
+  audio_feature: logmelIV
   sample_rate: 24000
   nfft: 1024
   n_mels: 128
