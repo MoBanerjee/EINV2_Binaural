@@ -27,7 +27,7 @@ training:
   loss_type: all
   loss_beta: 0.5
   PIT_type: tPIT
-  batch_size: 14
+  batch_size: 16
   overlap: 1&2&3
   optimizer: adamw
   lr: 0.0003

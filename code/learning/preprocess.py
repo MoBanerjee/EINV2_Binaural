@@ -491,6 +491,7 @@ class Preprocess:
             # print(batch_y.shape)
             # print("okayy")
             for i_channel in range(len(scalar_list)):
+                print(i_channel)
                 scalar_list[i_channel].partial_fit(batch_y[i_channel])
         iterator.close()
         mean = []

@@ -30,6 +30,7 @@ class LogmelIntensity_Extractor(nn.Module):
             freeze_parameters=True)
         self.hopsize=hop_length
         fft_window = librosa.filters.get_window(window, n_fft, fftbins=True)
+        
         self.window = torch.from_numpy(librosa.util.pad_center(fft_window, size=n_fft)).to(device="cuda")
         # Spectrogram extractor
         self.spectrogram_extractor = spectrogram_STFTInput
@@ -53,10 +54,12 @@ class LogmelIntensity_Extractor(nn.Module):
                             Now it is {}".format(x.shape))
         x_00=x[:,0,:]
         x_01=x[:,1,:]
+
         mag,cos,sin,x_0,x_1 = self.stft_extractor(x)
         x=(x_0,x_1)
         raw_spec,logmel = self.logmel_extractor(self.spectrogram_extractor(x))
-        ild=raw_spec[:,0,:,:]/raw_spec[:,1,:,:]
+        smallest=2.2250738585072014e-308
+        ild=raw_spec[:,0,:,:]/(raw_spec[:,1,:,:]+1)
         melcos,_=self.logmel_extractor(cos)
         melsin,_=self.logmel_extractor(sin)
         sinipd=melcos[:,1,:,:]*melsin[:,0,:,:]-melcos[:,0,:,:]*melsin[:,1,:,:]
@@ -84,6 +87,9 @@ class LogmelIntensity_Extractor(nn.Module):
         # print(logmel.shape)
         # print("iv shape")
         # print(intensity_vector.shape)
+        dev=x_00.get_device()
+        self.window=self.window.to(device=("cuda:"+str(dev)))
+        
         print(type(self.window))
         Px = torch.stft(input=x_00,
                         n_fft=self.nfft,
@@ -93,6 +99,8 @@ class LogmelIntensity_Extractor(nn.Module):
                         center=True,
                         pad_mode='reflect',
                         normalized=False, onesided=None, return_complex=True)
+        dev=x_01.get_device()
+        self.window=self.window.to(device=("cuda:"+str(dev)))
         Px_ref = torch.stft(input=x_01,
                             n_fft=self.nfft,
                             win_length=self.nfft,
@@ -101,6 +109,8 @@ class LogmelIntensity_Extractor(nn.Module):
                             center=True,
                             pad_mode='reflect',
                             normalized=False, onesided=None, return_complex=True)
+        Px=torch.transpose(Px,1,2)
+        Px_ref=torch.transpose(Px_ref,1,2)
         R = Px*torch.conj(Px_ref)
         gcc = torch.fft.irfft(torch.exp(1.j*torch.angle(R)))
         gcc = torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)
@@ -111,6 +121,7 @@ class LogmelIntensity_Extractor(nn.Module):
     
         out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)
         print("out shape",out.shape)
+        out=out.float()
         return out
 
 class Logmel_Extractor(nn.Module):

@@ -8,8 +8,8 @@ class Rotation:
         self.type = rotation_type
     
     def __call__(self, batch_x, batch_target):
-        batch_iv=batch_x[:,4:, :,:]
-        batch_x=batch_x[:,:4, :,:]
+        batch_iv=batch_x[:,2:, :,:]
+        batch_x=batch_x[:,:2, :,:]
         N = batch_x.shape[0]
         
         for n in range(N):

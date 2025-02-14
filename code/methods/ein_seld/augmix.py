@@ -51,14 +51,6 @@ def augment_and_mix(batch_x,batch_target, width=3, depth=-1):
 
         else:
             batch_target_ground[kv]=torch.cat((batch_target_ground[kv], batch_target_aug[kv]), dim=0)
-  rot=Rotation()
-  batch_x_rot,batch_target_rot=rot(batch_x,batch_target)
-  batch_x_ground=torch.cat((batch_x_ground, batch_x_rot), dim=0)
-  for kv in batch_target_ground:
-    if(type(batch_target_ground[kv])==list):
-        batch_target_ground[kv].append(batch_target_rot[kv])
-    
-    else:
-        batch_target_ground[kv]=torch.cat((batch_target_ground[kv], batch_target_rot[kv]), dim=0)
+  
 
   return batch_x_ground,batch_target_ground
