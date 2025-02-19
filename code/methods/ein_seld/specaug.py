@@ -22,8 +22,9 @@ class SpecAugment:
             batch_target (dict): dictionary of target tensors
 
         """
-        batch_iv=batch_x[:,4:, :,:]
-        batch_x=batch_x[:,:4, :,:]
+       
+        batch_iv=batch_x[:,2:, :,:]
+        batch_x=batch_x[:,:2, :,:]
         xy_ratio=batch_x.shape[-2]/batch_target["sed"].shape[1]
         self.xy_ratio = xy_ratio
         self.T_y = int(self.T / self.xy_ratio)

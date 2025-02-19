@@ -58,39 +58,17 @@ class LogmelIntensity_Extractor(nn.Module):
         mag,cos,sin,x_0,x_1 = self.stft_extractor(x)
         x=(x_0,x_1)
         raw_spec,logmel = self.logmel_extractor(self.spectrogram_extractor(x))
-        smallest=2.2250738585072014e-308
         ild=raw_spec[:,0,:,:]/(raw_spec[:,1,:,:]+1)
         melcos,_=self.logmel_extractor(cos)
         melsin,_=self.logmel_extractor(sin)
         sinipd=melcos[:,1,:,:]*melsin[:,0,:,:]-melcos[:,0,:,:]*melsin[:,1,:,:]
         cosipd=melcos[:,0,:,:]*melcos[:,1,:,:]+melsin[:,0,:,:]*melsin[:,1,:,:]
-        # sumcos=cos[:,0,:,:]*cos[:,1,:,:]-sin[:,0,:,:]*sin[:,1,:,:]
-        # sumsin=cos[:,0,:,:]*sin[:,1,:,:]+sin[:,0,:,:]*cos[:,1,:,:]
-        # intermediate=sumcos+1.j*sumsin
         (a,b,c,d)=logmel.shape
         ild=ild.view(a,1,c,d)
         sinipd=sinipd.view(a,1,c,d)
         cosipd=cosipd.view(a,1,c,d)
-        print(logmel.shape)
-        print(ild.shape)
-        print(sinipd.shape)
-        print(cosipd.shape)
-        # print(intermediate.shape)
-        # gcc=torch.fft.irfft(intermediate)
-        # print(gcc.shape)
-        # gcc=torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)
-        # gcc=gcc.view(a,1,c,d)
-        # print("gcc shape")
-        # print(gcc.shape)
-        # intensity_vector = self.intensityVector_extractor(x, self.logmel_extractor.melW)
-        # print("logmel shape")
-        # print(logmel.shape)
-        # print("iv shape")
-        # print(intensity_vector.shape)
         dev=x_00.get_device()
         self.window=self.window.to(device=("cuda:"+str(dev)))
-        
-        print(type(self.window))
         Px = torch.stft(input=x_00,
                         n_fft=self.nfft,
                         hop_length=self.hopsize,
@@ -114,13 +92,8 @@ class LogmelIntensity_Extractor(nn.Module):
         R = Px*torch.conj(Px_ref)
         gcc = torch.fft.irfft(torch.exp(1.j*torch.angle(R)))
         gcc = torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)
-        print("gcc shape")
-        print(gcc.shape)
-        gcc = gcc.view(a,1,c,d)
-
-    
+        gcc = gcc.view(a,1,c,d)   
         out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)
-        print("out shape",out.shape)
         out=out.float()
         return out
 

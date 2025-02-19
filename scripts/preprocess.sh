@@ -8,7 +8,6 @@ for DATASET in {'STARSS22','official'}
 do
     python3 code/main.py -c $CONFIG_FILE --dataset=$DATASET preprocess --preproc_mode='extract_data' --dataset_type='dev' 
     python3 code/main.py -c $CONFIG_FILE --dataset=$DATASET preprocess --preproc_mode='extract_pit_label' --dataset_type='dev' 
-    python3 code/main.py -c $CONFIG_FILE --dataset=$DATASET preprocess --preproc_mode='extract_mic_features' --dataset_type='dev' 
     python3 code/main.py -c $CONFIG_FILE --dataset=$DATASET preprocess --preproc_mode='extract_indexes' --dataset_type='dev'
 done
 
