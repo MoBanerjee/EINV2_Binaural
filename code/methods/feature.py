@@ -94,6 +94,7 @@ class LogmelIntensity_Extractor(nn.Module):
         gcc = torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)
         gcc = gcc.view(a,1,c,d)   
         out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)
+        #out = torch.cat((logmel,gcc), dim=1)
         out=out.float()
         return out
 
