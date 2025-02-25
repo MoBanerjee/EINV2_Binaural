@@ -58,7 +58,8 @@ class LogmelIntensity_Extractor(nn.Module):
         mag,cos,sin,x_0,x_1 = self.stft_extractor(x)
         x=(x_0,x_1)
         raw_spec,logmel = self.logmel_extractor(self.spectrogram_extractor(x))
-        ild=raw_spec[:,0,:,:]/(raw_spec[:,1,:,:]+1)
+        value = 1e-20
+        ild=raw_spec[:,0,:,:]/(raw_spec[:,1,:,:]+value)
         melcos,_=self.logmel_extractor(cos)
         melsin,_=self.logmel_extractor(sin)
         sinipd=melcos[:,1,:,:]*melsin[:,0,:,:]-melcos[:,0,:,:]*melsin[:,1,:,:]
@@ -94,7 +95,7 @@ class LogmelIntensity_Extractor(nn.Module):
         gcc = torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)
         gcc = gcc.view(a,1,c,d)   
         out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)
-        #out = torch.cat((logmel,gcc), dim=1)
+        
         out=out.float()
         return out
 
