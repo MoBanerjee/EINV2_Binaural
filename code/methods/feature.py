@@ -50,7 +50,8 @@ class LogmelIntensity_Extractor(nn.Module):
         self.melW=self.melW.to(dtype=torch.complex64)   
        
         self.melW = nn.Parameter(self.melW)
-        self.melW.requires_grad = False
+        self.melW.requires_grad = False 
+        
 
     def forward(self, x):
         """
