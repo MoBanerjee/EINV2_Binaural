@@ -5,7 +5,7 @@ import numpy as np
 from methods.utils.stft import (STFT, LogmelFilterBank, intensityvector,
                                 spectrogram_STFTInput,magphase)
 import math
-import matplotlib.pyplot as plt
+
 def nCr(n, r):
     return math.factorial(n) // math.factorial(r) // math.factorial(n-r)
 
@@ -29,9 +29,7 @@ class LogmelIntensity_Extractor(nn.Module):
             window=window, center=center, pad_mode=pad_mode, 
             freeze_parameters=True)
         self.hopsize=hop_length
-        fft_window = librosa.filters.get_window(window, n_fft, fftbins=True)
-        
-        self.window = torch.from_numpy(librosa.util.pad_center(fft_window, size=n_fft)).to(device="cuda")
+
         # Spectrogram extractor
         self.spectrogram_extractor = spectrogram_STFTInput
         
@@ -47,7 +45,7 @@ class LogmelIntensity_Extractor(nn.Module):
         # (n_fft // 2 + 1, mel_bins)
         self.melW = torch.Tensor(self.melW)#checked2
       
-        self.melW=self.melW.to(dtype=torch.complex128)   #checked2
+        self.melW=self.melW.to(dtype=torch.complex64)   #checked2
        
         self.melW = nn.Parameter(self.melW)#checked2
         self.melW.requires_grad = False #checked2
@@ -64,43 +62,17 @@ class LogmelIntensity_Extractor(nn.Module):
             raise ValueError("x shape must be (batch_size, num_channels, data_length)\n \
                             Now it is {}".format(x.shape))
 
-        x_00=x[:,0,:]
-        x_01=x[:,1,:]
-        dev=x_00.get_device()
-        self.window=self.window.to(device=("cuda:"+str(dev)))
-        Px = torch.stft(input=x_00,
-                        n_fft=self.nfft,
-                        hop_length=self.hopsize,
-                        win_length=self.nfft,
-                        window=self.window,
-                        center=True,
-                        pad_mode='reflect',
-                        normalized=False, onesided=None, return_complex=True)
-        Px=torch.transpose(Px,1,2)
-        dev=x_01.get_device()
-        self.window=self.window.to(device=("cuda:"+str(dev)))
-        Px_ref = torch.stft(input=x_01,
-                            n_fft=self.nfft,
-                            win_length=self.nfft,
-                            hop_length=self.hopsize,
-                            window=self.window,
-                            center=True,
-                            pad_mode='reflect',
-                            normalized=False, onesided=None, return_complex=True)
-        Px_ref=torch.transpose(Px_ref,1,2)
-        x_0=Px
-        x_1=Px_ref
 
-        # x_0real=x_0.real#checked2
+        _,_,_,x_0,x_1 = self.stft_extractor(x)#checked2
+
+        x_0real=x_0[:,0,:,:]#checked2
         
-        # x_1real=x_1.real  #checked2
+        x_1real=x_0[:,1,:,:]  #checked2
         
-        # x_0imag=x_0.imag#checked2
-        # x_1imag=x_1.imag#checked2
-        print(Px.shape)
-        print(Px[0,0,0].dtype)
-        x_0raw=x_0#checked2
-        x_1raw=x_1#checked2
+        x_0imag=x_1[:,0,:,:]#checked2
+        x_1imag=x_1[:,1,:,:]#checked2
+        x_0raw=torch.complex(x_0real,x_0imag)#checked2
+        x_1raw=torch.complex(x_1real,x_1imag)#checked2
         x_0rawmel=torch.matmul(x_0raw, self.melW)#checked2
         x_1rawmel=torch.matmul(x_1raw, self.melW)#checked2
 
@@ -115,10 +87,8 @@ class LogmelIntensity_Extractor(nn.Module):
 
         (a,b,c,d)=logmel.shape#checked2
         ild=ild.view(a,1,c,d)#checked2
-        #sinipd=sinipd.view(a,1,c,d)#checked2
-        #cosipd=cosipd.view(a,1,c,d)#checked2
-        temp=torch.sum(sinipd,dim=[0,1])#checked2
-        print(temp.shape)
+        sinipd=sinipd.view(a,1,c,d)#checked2
+        cosipd=cosipd.view(a,1,c,d)#checked2
         #GCC Features
         R = x_0raw*torch.conj(x_1raw)#checked2
         gcc = torch.fft.irfft(torch.exp(1.j*torch.angle(R)))#checked2
@@ -127,7 +97,7 @@ class LogmelIntensity_Extractor(nn.Module):
         #out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)#checked2
         out = torch.cat((logmel,gcc), dim=1)#checked2
         out=out.float()#checked2
-
+   
         return out#checked2
 
 class Logmel_Extractor(nn.Module):

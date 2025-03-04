@@ -12,7 +12,7 @@ class ConvConformer(nn.Module):
 
         if cfg['data']['audio_feature'] in ['logmelIV', 'salsa', 'salsalite']:
             self.sed_in_channels = 2
-            self.doa_in_channels = 6 #CHANGE HERE
+            self.doa_in_channels = 3 #CHANGE HERE
         elif cfg['data']['audio_feature'] in ['logmelgcc']:
             self.sed_in_channels = 4
             self.doa_in_channels = 10
