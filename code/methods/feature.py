@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import librosa
@@ -5,9 +8,45 @@ import numpy as np
 from methods.utils.stft import (STFT, LogmelFilterBank, intensityvector,
                                 spectrogram_STFTInput,magphase)
 import math
-import matplotlib.pyplot as plt
+
 def nCr(n, r):
     return math.factorial(n) // math.factorial(r) // math.factorial(n-r)
+def plotter_gradient(x,y, axlab,plot_type,save_path):
+    x=x.cpu()    
+    y=y.cpu()
+   
+    c=range(0,128)
+    
+    plt.figure(figsize=(8, 6))
+    scatter = plt.scatter(x, y, c=c, cmap='viridis', edgecolor='k', alpha=0.75)
+
+
+    plt.colorbar(scatter, label="Color Gradient (Mel Bin)")
+
+  
+    plt.xlabel(axlab)
+    plt.ylabel("ILD")
+
+    plt.savefig("/home/var/Desktop/Mohor/einv2b/scatterplots/"+plot_type+"/"+save_path+".png", dpi=300, bbox_inches='tight')
+    plt.close()
+def plotter_mel(y, axlab,plot_type,save_path):
+    x=range(0,128)    
+    y=y.cpu()
+   
+ 
+    
+    plt.figure(figsize=(8, 6))
+    plt.scatter(x, y, alpha=0.75)
+
+
+ 
+
+  
+    plt.xlabel("Melbin")
+    plt.ylabel(axlab)
+
+    plt.savefig("/home/var/Desktop/Mohor/einv2b/scatterplots/"+plot_type+"/"+save_path+".png", dpi=300, bbox_inches='tight')
+    plt.close()
 
 class LogmelIntensity_Extractor(nn.Module):
     #MAY NEED TO CHANGE THIS FOR BINAURAL
@@ -29,9 +68,9 @@ class LogmelIntensity_Extractor(nn.Module):
             window=window, center=center, pad_mode=pad_mode, 
             freeze_parameters=True)
         self.hopsize=hop_length
-        fft_window = librosa.filters.get_window(window, n_fft, fftbins=True)
+        fft_window = librosa.filters.get_window(window, n_fft, fftbins=True)#checked3
         
-        self.window = torch.from_numpy(librosa.util.pad_center(fft_window, size=n_fft)).to(device="cuda")
+        self.window = torch.from_numpy(librosa.util.pad_center(fft_window, size=n_fft)).to(device="cuda")#checked3
         # Spectrogram extractor
         self.spectrogram_extractor = spectrogram_STFTInput
         
@@ -64,10 +103,10 @@ class LogmelIntensity_Extractor(nn.Module):
             raise ValueError("x shape must be (batch_size, num_channels, data_length)\n \
                             Now it is {}".format(x.shape))
 
-        x_00=x[:,0,:]
-        x_01=x[:,1,:]
-        dev=x_00.get_device()
-        self.window=self.window.to(device=("cuda:"+str(dev)))
+        x_00=x[:,0,:]#checked3
+        x_01=x[:,1,:]#checked3
+        dev=x_00.get_device()#checked3
+        self.window=self.window.to(device=("cuda:"+str(dev)))#checked3
         Px = torch.stft(input=x_00,
                         n_fft=self.nfft,
                         hop_length=self.hopsize,
@@ -75,10 +114,10 @@ class LogmelIntensity_Extractor(nn.Module):
                         window=self.window,
                         center=True,
                         pad_mode='reflect',
-                        normalized=False, onesided=None, return_complex=True)
-        Px=torch.transpose(Px,1,2)
-        dev=x_01.get_device()
-        self.window=self.window.to(device=("cuda:"+str(dev)))
+                        normalized=False, onesided=None, return_complex=True)#checked3
+        Px=torch.transpose(Px,1,2)#checked3
+        dev=x_01.get_device()#checked3
+        self.window=self.window.to(device=("cuda:"+str(dev)))#checked3
         Px_ref = torch.stft(input=x_01,
                             n_fft=self.nfft,
                             win_length=self.nfft,
@@ -86,49 +125,63 @@ class LogmelIntensity_Extractor(nn.Module):
                             window=self.window,
                             center=True,
                             pad_mode='reflect',
-                            normalized=False, onesided=None, return_complex=True)
-        Px_ref=torch.transpose(Px_ref,1,2)
-        x_0=Px
-        x_1=Px_ref
-
-        # x_0real=x_0.real#checked2
+                            normalized=False, onesided=None, return_complex=True)#checked3
+        Px_ref=torch.transpose(Px_ref,1,2)#checked3
+        x_0=Px#checked3
+        x_1=Px_ref#checked3
+        x_0raw=x_0#checked3
+        x_1raw=x_1#checked3
+        x_0rawmel=torch.matmul(x_0raw, self.melW)#checked3
+        x_1rawmel=torch.matmul(x_1raw, self.melW)#checked3
+        a1=torch.angle(x_0rawmel)#checked3
+        a2=torch.angle(x_1rawmel)#checked3
+        sinipd=torch.sin(a1-a2)#checked3
+        cosipd=torch.cos(a1-a2)#checked3
+        ang=a1-a2
+        (a,c,d)=x_0.shape#checked3
+        x_0=x_0.view(a,1,c,d)#checked3
+        x_1=x_1.view(a,1,c,d)#checked3
+        xtemp1=torch.cat((x_0.real,x_1.real),dim=1)#checked3
+        xtemp2=torch.cat((x_0.imag,x_1.imag),dim=1)#checked3
+        x=(xtemp1,xtemp2)#checked3
         
-        # x_1real=x_1.real  #checked2
+        raw_spec,logmel = self.logmel_extractor(self.spectrogram_extractor(x).to(dtype=torch.float))#checked3
         
-        # x_0imag=x_0.imag#checked2
-        # x_1imag=x_1.imag#checked2
-        print(Px.shape)
-        print(Px[0,0,0].dtype)
-        x_0raw=x_0#checked2
-        x_1raw=x_1#checked2
-        x_0rawmel=torch.matmul(x_0raw, self.melW)#checked2
-        x_1rawmel=torch.matmul(x_1raw, self.melW)#checked2
+        value = 1e-20#checked3
+        ild=raw_spec[:,0,:,:]/(raw_spec[:,1,:,:]+value)#checked3
 
-        _,c0,s0=magphase(x_0rawmel.real,x_0rawmel.imag)#checked2
-        _,c1,s1=magphase(x_1rawmel.real,x_1rawmel.imag) #checked2
-        sinipd=s0*c1-c0*s1#checked2
-        cosipd=c0*c1+s0*s1#checked2
-        x=(x_0,x_1)#checked2
-        raw_spec,logmel = self.logmel_extractor(self.spectrogram_extractor(x))#checked2
-        value = 1e-20#checked2
-        ild=raw_spec[:,0,:,:]/(raw_spec[:,1,:,:]+value)#checked2
+        (a,b,c,d)=logmel.shape#checked3
+        
+        tempsin=torch.sum(sinipd,dim=[1])/c#checked3
+        tempcos=torch.sum(cosipd,dim=[1])/c
+        tempild=torch.sum(ild,dim=[1])/c
+        tempang=torch.sum(ang,dim=[1])/c
 
-        (a,b,c,d)=logmel.shape#checked2
-        ild=ild.view(a,1,c,d)#checked2
-        #sinipd=sinipd.view(a,1,c,d)#checked2
-        #cosipd=cosipd.view(a,1,c,d)#checked2
-        temp=torch.sum(sinipd,dim=[0,1])#checked2
-        print(temp.shape)
+        
+        for i in range(0,100):
+            plotter_gradient(tempsin[i,:],tempild[i,:],"SinIPD","ILDvSinIPD","Plot_"+str(i+1))#checked3
+            plotter_gradient(tempcos[i,:],tempild[i,:],"CosIPD","ILDvCosIPD","Plot_"+str(i+1))#checked3
+            plotter_mel(tempsin[i,:],"SinIPD","SinIPDvMel","Plot_"+str(i+1))#checked3
+            plotter_mel(tempcos[i,:],"CosIPD","CosIPDvMel","Plot_"+str(i+1))#checked3
+            plotter_mel(tempild[i,:],"ILD","ILDvMel","Plot_"+str(i+1))#checked3
+            plotter_mel(tempang[i,:],"IPD","IPDvMel","Plot_"+str(i+1))#checked3
+            
+          
+        ild=ild.view(a,1,c,d)#checked3
+        sinipd=sinipd.view(a,1,c,d)#checked2
+        cosipd=cosipd.view(a,1,c,d)#checked2
+        
+        # print(temp.shape)
         #GCC Features
-        R = x_0raw*torch.conj(x_1raw)#checked2
-        gcc = torch.fft.irfft(torch.exp(1.j*torch.angle(R)))#checked2
-        gcc = torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)#checked2
-        gcc = gcc.view(a,1,c,d)#checked2   
-        #out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)#checked2
-        out = torch.cat((logmel,gcc), dim=1)#checked2
-        out=out.float()#checked2
-
-        return out#checked2
+        R = x_0raw*torch.conj(x_1raw)#checked3
+        gcc = torch.fft.irfft(torch.exp(1.j*torch.angle(R)))#checked3
+        gcc = torch.cat((gcc[:,:,-self.n_mels//2:],gcc[:,:,:self.n_mels//2]),dim=-1)#checked3
+        gcc = gcc.view(a,1,c,d)#checked3   
+        out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)#checked3
+        #out = torch.cat((logmel,gcc), dim=1)#checked3
+        out=out.float()#checked3
+        
+        return out#checked3
 
 class Logmel_Extractor(nn.Module):
     def __init__(self, cfg):
