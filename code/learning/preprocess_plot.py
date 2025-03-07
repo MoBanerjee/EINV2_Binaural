@@ -464,8 +464,8 @@ class Preprocess:
         train_set = BaseDataset(self.args, self.cfg, self.dataset)
         data_generator = DataLoader(
             dataset=train_set,
-            batch_size=32,
-            shuffle=False,
+            batch_size=100,
+            shuffle=True,
             num_workers=self.args.num_workers,
             collate_fn=collate_fn,
             pin_memory=True
@@ -475,7 +475,7 @@ class Preprocess:
         scalar_list = [preprocessing.StandardScaler() for _ in range(self.channels_dict[self.cfg['data']['audio_feature']])] #A list of scalers for the logmel and ivs #CHANGE THIS IF ADAPTING TO BINAURAL
         begin_time = timer()
         for it, batch_sample in iterator:
-            if it == len(data_generator):
+            if it == 1:
                 break
             batch_x = batch_sample['waveform'][:]
             batch_x.require_grad = False

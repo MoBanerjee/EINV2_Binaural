@@ -77,7 +77,7 @@ class Preprocess:
 
         # Path for indexes of data
         self.data_type = 'wav' if self.cfg['data']['audio_feature'] in ['logmelIV', 'logmel'] else 'feature'
-        self.channels_dict = {'logmel': 4, 'logmelIV': 3}
+        self.channels_dict = {'logmel': 4, 'logmelIV': 6}
         self.indexes_path_list = [ 
             data_h5_dir.joinpath(self.data_type).joinpath('{}set_{}sChunklen_{}sHoplen_train.csv'\
                 .format(args.dataset_type, cfg['data']['train_chunklen_sec'], cfg['data']['train_hoplen_sec'])),
@@ -464,8 +464,8 @@ class Preprocess:
         train_set = BaseDataset(self.args, self.cfg, self.dataset)
         data_generator = DataLoader(
             dataset=train_set,
-            batch_size=100,
-            shuffle=True,
+            batch_size=32,
+            shuffle=False,
             num_workers=self.args.num_workers,
             collate_fn=collate_fn,
             pin_memory=True
@@ -475,7 +475,7 @@ class Preprocess:
         scalar_list = [preprocessing.StandardScaler() for _ in range(self.channels_dict[self.cfg['data']['audio_feature']])] #A list of scalers for the logmel and ivs #CHANGE THIS IF ADAPTING TO BINAURAL
         begin_time = timer()
         for it, batch_sample in iterator:
-            if it == 1:
+            if it == len(data_generator):
                 break
             batch_x = batch_sample['waveform'][:]
             batch_x.require_grad = False

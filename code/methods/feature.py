@@ -157,14 +157,14 @@ class LogmelIntensity_Extractor(nn.Module):
         tempild=torch.sum(ild,dim=[1])/c
         tempang=torch.sum(ang,dim=[1])/c
 
-        
-        for i in range(0,100):
-            plotter_gradient(tempsin[i,:],tempild[i,:],"SinIPD","ILDvSinIPD","Plot_"+str(i+1))#checked3
-            plotter_gradient(tempcos[i,:],tempild[i,:],"CosIPD","ILDvCosIPD","Plot_"+str(i+1))#checked3
-            plotter_mel(tempsin[i,:],"SinIPD","SinIPDvMel","Plot_"+str(i+1))#checked3
-            plotter_mel(tempcos[i,:],"CosIPD","CosIPDvMel","Plot_"+str(i+1))#checked3
-            plotter_mel(tempild[i,:],"ILD","ILDvMel","Plot_"+str(i+1))#checked3
-            plotter_mel(tempang[i,:],"IPD","IPDvMel","Plot_"+str(i+1))#checked3
+       
+        # for i in range(0,100):
+        #     plotter_gradient(tempsin[i,:],tempild[i,:],"SinIPD","ILDvSinIPD","Plot_"+str(i+1))#checked3
+        #     plotter_gradient(tempcos[i,:],tempild[i,:],"CosIPD","ILDvCosIPD","Plot_"+str(i+1))#checked3
+        #     plotter_mel(tempsin[i,:],"SinIPD","SinIPDvMel","Plot_"+str(i+1))#checked3
+        #     plotter_mel(tempcos[i,:],"CosIPD","CosIPDvMel","Plot_"+str(i+1))#checked3
+        #     plotter_mel(tempild[i,:],"ILD","ILDvMel","Plot_"+str(i+1))#checked3
+        #     plotter_mel(tempang[i,:],"IPD","IPDvMel","Plot_"+str(i+1))#checked3
             
           
         ild=ild.view(a,1,c,d)#checked3
@@ -180,7 +180,7 @@ class LogmelIntensity_Extractor(nn.Module):
         out = torch.cat((logmel, ild,sinipd,cosipd,gcc), dim=1)#checked3
         #out = torch.cat((logmel,gcc), dim=1)#checked3
         out=out.float()#checked3
-        
+        print(out.shape)
         return out#checked3
 
 class Logmel_Extractor(nn.Module):
