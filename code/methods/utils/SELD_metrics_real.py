@@ -10,10 +10,6 @@
 #
 # This script has MIT license
 #
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
-
 
 import numpy as np
 
@@ -32,7 +28,7 @@ class SELDMetrics(object):
         :param doa_thresh: DOA threshold for location sensitive detection.
         '''
         self._nb_classes = nb_classes
-        self.quadrant_conf_matrix = np.zeros((4, 4)) 
+
         # Variables for Location-senstive detection performance
         self._TP = np.zeros(self._nb_classes)
         self._FP = np.zeros(self._nb_classes)
@@ -55,20 +51,7 @@ class SELDMetrics(object):
         self._DE_FN = np.zeros(self._nb_classes)
 
         self._average = average
-    def get_quadrant(self,azimuth):
-        """
-        Converts an azimuth angle (in degrees) to a quadrant.
-        """
-        temp=np.pi / 180.
-        if (-45*temp) <= azimuth <= (45*temp):
-            return 0  # Front
-        elif (45*temp) < azimuth <= (135*temp):
-            return 1  # Left
-        elif azimuth > (135*temp) or azimuth < (-135*temp):
-            return 2  # Back
-        else:
-            return 3  # Right
-    
+
     def early_stopping_metric(self, _er, _f, _le, _lr):
         """
         Compute early stopping metric from sed and doa errors.
@@ -84,46 +67,6 @@ class SELDMetrics(object):
             1 - _lr
         ], 0)
         return seld_metric
-
-
-    def plot_quadrant_conf_matrix(self, title="Quadrant Confusion Matrix"):
-        # Normalize confusion matrix row-wise
-        conf_matrix = self.quadrant_conf_matrix / (self.quadrant_conf_matrix.sum(axis=1, keepdims=True) + 1e-10)
-        conf_matrix = np.nan_to_num(conf_matrix)  # Replace NaN with 0
-
-        # Define quadrant labels
-        labels = ['Front', 'Back', 'Left', 'Right']
-
-        fig, ax = plt.subplots(figsize=(6, 6))
-        
-        # Create the heatmap using pcolor
-        c = ax.pcolor(conf_matrix, cmap="magma_r", edgecolors='k', linewidths=2)
-
-        # Format grid and labels
-        ax.set_xticks(np.arange(len(labels)) + 0.5, minor=False)
-        ax.set_yticks(np.arange(len(labels)) + 0.5, minor=False)
-        ax.set_xticklabels(labels, fontsize=12)
-        ax.set_yticklabels(labels, fontsize=12)
-        ax.set_xlabel("Predicted Quadrant", fontsize=14)
-        ax.set_ylabel("True Quadrant", fontsize=14)
-        ax.set_title(title, fontsize=16)
-
-        # Add color bar
-        cbar = plt.colorbar(c, ax=ax)
-        cbar.ax.set_ylabel("Normalized Frequency", fontsize=12)
-
-        # Annotate the cells with values
-        for i in range(conf_matrix.shape[0]):
-            for j in range(conf_matrix.shape[1]):
-                plt.text(j + 0.5, i + 0.5, f"{conf_matrix[i, j]:.2f}",
-                        ha='center', va='center', color='white' if conf_matrix[i, j] < 0.5 else 'black', fontsize=12)
-
-        # Save the figure
-        save_path = "/home/var/Desktop/Mohor/einv2b/Quadrants.png"
-        
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        plt.close()
-
 
     def compute_seld_scores(self):
         '''
@@ -155,7 +98,6 @@ class SELDMetrics(object):
             SELD_scr = self.early_stopping_metric(np.repeat(ER, self._nb_classes), F, LE, LR)
             classwise_results = np.array([np.repeat(ER, self._nb_classes), F, LE, LR, SELD_scr])
             F, LE, LR, SELD_scr = F.mean(), LE.mean(), LR.mean(), SELD_scr.mean()
-        self.plot_quadrant_conf_matrix()
         return ER, F, LE, LR, SELD_scr, classwise_results
 
     def update_seld_scores(self, pred, gt):
@@ -199,15 +141,10 @@ class SELDMetrics(object):
                             pred_doas = pred_arr[:, :]
 
                             if gt_doas.shape[-1] == 2: # convert DOAs to radians, if the input is in degrees
-                                
                                 gt_doas = gt_doas * np.pi / 180.
                                 pred_doas = pred_doas * np.pi / 180.
-                            
+
                             dist_list, row_inds, col_inds = least_distance_between_gt_pred(gt_doas, pred_doas)
-                            for gt_idx, pred_idx in zip(row_inds, col_inds):  # Only matched pairs
-                                gt_quad = self.get_quadrant(gt_doas[gt_idx][0])  # Extract GT azimuth and get quadrant
-                                pred_quad = self.get_quadrant(pred_doas[pred_idx][0])  # Extract predicted azimuth and get quadrant
-                                self.quadrant_conf_matrix[gt_quad, pred_quad] += 1  # Update confusion matrix
 
                             # Collect the frame-wise distance between matched ref-pred DOA pairs
                             for dist_cnt, dist_val in enumerate(dist_list):
