@@ -27,7 +27,7 @@ training:
   loss_type: all
   loss_beta: 0.5
   PIT_type: tPIT
-  batch_size: 15 #use 15 for mff
+  batch_size: 15 #use 15 for mff, 16 for original
   overlap: 1&2&3
   optimizer: adamw
   lr: 0.0003

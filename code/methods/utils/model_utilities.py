@@ -162,28 +162,32 @@ class MFF(nn.Module):
         self.FU21=FU(in_channels=2*in_channels,factor=1)
         self.FU31=FU(in_channels=4*in_channels,factor=2)
         self.FU32=FU(in_channels=4*in_channels,factor=1)
-        self.TFCM1=TFCM(in_channels=in_channels)
-        self.TFCM2=TFCM(in_channels=in_channels*2)
-        self.TFCM3=TFCM(in_channels=in_channels*4)
-
+        self.TFCM1_1=TFCM(in_channels=in_channels)
+        self.TFCM1_2=TFCM(in_channels=in_channels)
+        self.TFCM1_3=TFCM(in_channels=in_channels)
+        self.TFCM2_1=TFCM(in_channels=in_channels*2)
+        self.TFCM2_2=TFCM(in_channels=in_channels*2)
+        self.TFCM2_3=TFCM(in_channels=in_channels*2)
+        self.TFCM3_1=TFCM(in_channels=in_channels*4)
+        self.TFCM3_2=TFCM(in_channels=in_channels*4)
 
         
     def forward(self, x):
         
-        x1stage1=self.TFCM1(x)
-        x2stage1=self.TFCM2(self.FD12(x))
+        x1stage1=self.TFCM1_1(x)
+        x2stage1=self.TFCM2_1(self.FD12(x))
         
         x1stage1sum=x1stage1+self.FU21(x2stage1)
         x2stage1sum=self.FD12(x1stage1)+x2stage1
-        x1stage2=self.TFCM1(x1stage1sum)
-        x2stage2=self.TFCM2(x2stage1sum)
-        x3stage2=self.TFCM3(self.FD23(x2stage1sum))
+        x1stage2=self.TFCM1_2(x1stage1sum)
+        x2stage2=self.TFCM2_2(x2stage1sum)
+        x3stage2=self.TFCM3_1(self.FD23(x2stage1sum))
         x1stage2sum=x1stage2+ self.FU21(x2stage2)+self.FU31(x3stage2)
         x2stage2sum=x2stage2+self.FD12(x1stage2)+self.FU32(x3stage2)
-        x3stage2sum=x3stage2+self.FD13(x1stage2)+self.FD23(x2stage2) #error here fd13
-        x1stage3=self.TFCM1(x1stage2sum)
-        x2stage3=self.TFCM2(x2stage2sum)
-        x3stage3=self.TFCM3(x3stage2sum)
+        x3stage2sum=x3stage2+self.FD13(x1stage2)+self.FD23(x2stage2) 
+        x1stage3=self.TFCM1_3(x1stage2sum)
+        x2stage3=self.TFCM2_3(x2stage2sum)
+        x3stage3=self.TFCM3_2(x3stage2sum)
         xfinal=x1stage3+self.FU21(x2stage3)+self.FU31(x3stage3)
         return xfinal
        
